@@ -19,18 +19,25 @@ uv pip install -e .
 
 ### Basic Usage
 ```python
-from agnets import Agent, OpenAIConfig
+from agnets import Agnet, Config
+from agnets.backends.openai import OpenAICompatibleBackend
 
-# Create an agent with OpenAI backend
-agent = Agent(config=OpenAIConfig(api_key="your-key"))
+# Create an agnet with OpenAI-compatible backend
+agnet = Agnet(
+    config=Config(model_name="gpt-3.5-turbo"),
+    backend=OpenAICompatibleBackend(api_key="your-key")
+)
 
 # Simple chat
-response = agent.chat("What is the capital of France?")
+response = agnet.invoke("What is the capital of France?")
 print(response)
 
-# Agent with Ollama backend
-ollama_agent = Agent(config=OllamaConfig(model="llama3"))
-response = ollama_agent.chat("Explain quantum computing")
+# Agnet with Ollama backend
+ollama_agnet = Agnet(
+    config=Config(model_name="llama3"),
+    backend=OpenAICompatibleBackend(base_url="http://localhost:11434/v1")
+)
+response = ollama_agnet.invoke("Explain quantum computing")
 print(response)
 ```
 
