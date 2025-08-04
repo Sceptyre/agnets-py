@@ -5,7 +5,7 @@ import mcp
 from typing import Any, List
 
 from .types.backend import Backend
-from .types.message import Message
+from .types.message import Message, MessageComponent
 from .config import Config
 
 import json
@@ -67,8 +67,10 @@ outputs:
         messages = [
             Message(
                 role='user',
-                message_type='message',
-                message_content=user_message
+                components=[MessageComponent(
+                    type='message',
+                    content=user_message
+                )],
             )
         ]
         

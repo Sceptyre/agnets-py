@@ -13,3 +13,6 @@ dependencies = [
 ollama = [
     "ollama>=0.5.1",
 ]
+openai = [
+    "openai>=1.98.0",
+]

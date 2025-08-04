@@ -6,16 +6,13 @@ from ..types.backend import Backend
 from ..types.message import Message
 
 class OpenAICompatibleBackend(Backend):
-    api_key: str = ""
-    base_url: str = "https://api.openai.com/v1"
-
     def model_post_init(self, ctx):
         self._client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
+            api_key=self.config.get('OPENAI_API_KEY'),
+            base_url=self.config.get('OPENAI_BASE_URL')
         )
 
-    def generate_response(self, messages, agent_config, tools = [], system_prompt_override: str = ""):
+    def generate_response(self, messages, agent_config, tools = [], system_prompt_override: str = "", **kvargs):
         system_prompt = system_prompt_override or agent_config.system_prompt
 
         mapped_messages=[
