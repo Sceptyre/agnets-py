@@ -1,7 +1,9 @@
 import ollama
 
 from ..types.backend import Backend
-from ..types.message import Message
+from ..types.message import Message, MessageComponent, MessageThinkingComponent, MessageToolCallComponent
+
+import mcp.types
 
 
 # HELPERS
@@ -46,6 +48,37 @@ def _map_to_ollama_message(message: Message) -> ollama.Message:
         return ollama.Message.model_validate(msg_builder)
 
 
+def _map_from_ollama_message(ollama_message: ollama.Message) -> Message:
+    msg = Message(role=ollama_message.role, components=[])
+
+    if ollama_message.thinking:
+        msg.components.append(MessageThinkingComponent(
+            type='thinking',
+            content=ollama_message.thinking
+        ))
+
+    if ollama_message.content:
+        msg.components.append(MessageComponent(
+            type='message',
+            content=ollama_message.content
+        ))
+
+    for tool_call in ollama_message.tool_calls or []:
+        msg.components.append(MessageToolCallComponent(
+            type='tool_call',
+            content=mcp.types.CallToolRequest(
+                method='tools/call',
+                params=mcp.types.CallToolRequestParams(
+                    name=tool_call.function.name,
+                    arguments=tool_call.function.arguments
+                )
+            )
+        ))
+
+    return msg
+
+
+
 class OllamaBackend(Backend):
     def model_post_init(self, ctx):
         self._client = ollama.Client(
@@ -75,10 +108,5 @@ class OllamaBackend(Backend):
             tools=tools_mapped,
             think=agent_config.do_thinking
         )
-        print(ollama_response)
 
-        return [Message(
-            role='assistant',
-            message_type='message',
-            message_content=ollama_response['message']['content']
-        )]
+        return _map_from_ollama_message(ollama_response.message)
