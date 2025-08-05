@@ -13,8 +13,8 @@ def setup_ag1():
 
     ag1 = Agent(
         config=Config(
-            model_name="google/gemini-2.5-flash",
-            system_prompt="YOU MUST USE A TOOL"
+            model_name="z-ai/glm-4-32b",
+            system_prompt="Work with your agents to answer user questions. Do not ask the user permission to use a tool. The agents are your peers."
         ), 
         backend=ob1
     )
@@ -29,7 +29,13 @@ def setup_ag1():
 
 ag1 = setup_ag1()
 
-example_fleet.add_agent('agent_one', ag1)
+example_fleet.add_agent('agent_one', ag1, allowed_escalation_agent_names=['calculator_agent'])
 
-res = example_fleet.invoke_agent("agent_one", "what functions are available to you?")
+from calculator import agnet as calculator_agent
+
+example_fleet.add_agent('calculator_agent', calculator_agent)
+
+user_input = input(">>> ")
+
+res = example_fleet.invoke_agent("agent_one", user_input, stop_on=['respond_to_user'])
 print(res)

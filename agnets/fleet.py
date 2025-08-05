@@ -16,13 +16,28 @@ class Fleet(BaseModel):
         self.agents[agent_name] = agent
         self._relationships[agent_name] = allowed_escalation_agent_names
 
-        KNOWN_AGENTS_TYPE = Literal[allowed_escalation_agent_names]
+    
+        @agent.add_tool
+        def respond_to_agent(response: str) -> str:
+            """
+            Reply to an agent that prompted you
+            """
+            return response
 
-        print(agent)
+        if len(allowed_escalation_agent_names) == 0:
+            return
+
+        KNOWN_AGENTS_TYPE = Literal[*allowed_escalation_agent_names]
 
         @agent.add_tool
         def ask_agent(agent_name: KNOWN_AGENTS_TYPE, query: str, context: str):
-            return self.agents.get(agent_name).invoke(f"Question: {query}\nContext: {context}")
+            """
+            Ask a known agent a question
+            """
+            if agent_name not in allowed_escalation_agent_names:
+                return f"ERROR: '{agent_name}' not in {allowed_escalation_agent_names}"
 
-    def invoke_agent(self, agent_name: str, query: str):
-        return self.agents.get(agent_name).invoke(query)
+            return self.agents.get(agent_name).invoke(f"Question: {query}\nContext: {context}", stop_on=['respond_to_agent'], force_tools=True)
+
+    def invoke_agent(self, agent_name: str, query: str, stop_on: List[str] = []):
+        return self.agents.get(agent_name).invoke(query, stop_on = stop_on, force_tools=True)
