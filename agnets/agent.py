@@ -5,7 +5,7 @@ import mcp
 from typing import Any, List
 
 from .types.backend import Backend
-from .types.message import Message, MessageComponent
+from .types.message import Message, MessageComponent, MessageToolResultComponent
 from .config import Config
 
 import json
@@ -61,7 +61,11 @@ outputs:
 {tool.fn_metadata.output_schema}"""
         return system_prompt
 
-    def invoke(self, user_message: str) -> Any:
+    def invoke(self, user_message: str, stop_on: List[str] = [], force_tools: bool = True) -> List[Message]:
+        if len(stop_on) == 0 and force_tools:
+            raise Exception(f"Empty `stop_on` and `force_tools` = True not supported.")
+
+
         tools = self.list_tools()
 
         messages = [
@@ -73,13 +77,56 @@ outputs:
                 )],
             )
         ]
-        
-        if self.config.do_unsupported_model_workaround:
-            system_prompt = self._workaround_system_prompt(tools)
-            return self.backend.generate_response(messages, self.config, system_prompt_override=system_prompt)
 
-        else:
-            return self.backend.generate_response(messages, self.config, tools=tools)
+        while True:
+            # PREPARE LLM RESPONSE ARGS
+            _kvargs = {
+                'messages': messages,
+                'agent_config': self.config,
+            }
+
+            if self.config.do_unsupported_model_workaround:
+                _kvargs['system_prompt_override'] = self._workaround_system_prompt(tools)
+
+            else:
+                _kvargs['tools'] = tools
+                
+            # GENERATE RESPONSE
+            response =  self.backend.generate_response(**_kvargs)
+            messages.append(response)
+
+            # RETURN IF NO TOOL USE REQUIRED
+            if not force_tools:
+                return messages
+
+            # TOOL USE ENFORCEMENT
+            if force_tools and response.components[-1].type != 'tool_call':
+                messages.append(Message(role='user', components=[MessageComponent(type='message', content="ERROR: Calling a tool is REQUIRED")]))
+                continue
+
+            # EXECUTE TOOLS
+            for tool_call in filter(lambda x: x.type == 'tool_call', response.components):
+                result = self._call_tool(tool_call.content.params.name, **tool_call.content.params.arguments)
+                messages.append(Message(
+                    role='system',
+                    components=[
+                        MessageToolResultComponent(
+                            meta={
+                                'tool_call_id': tool_call.meta.get('tool_call_id'), 
+                                'tool_call_name': tool_call.content.params.name
+                            },
+                            type='tool_result',
+                            content=mcp.types.CallToolResult(
+                                content=[mcp.types.TextContent(type='text', text=str(result))]
+                            ),
+                        )
+                    ]
+                ))
+
+
+                # TOOL STOP
+                if tool_call.content.params.name in stop_on:
+                    return messages
 
 
 # Alias

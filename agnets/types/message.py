@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import mcp.types
 
 from typing import Literal, List, Dict, Any
@@ -7,7 +7,7 @@ from typing import Literal, List, Dict, Any
 class MessageComponent(BaseModel):
     type: Literal['message']
     content: str
-    _meta: Dict[str, Any]
+    meta: Dict[str, Any] = Field(default_factory=dict)
 
 class MessageThinkingComponent(MessageComponent):
     type: Literal['thinking']

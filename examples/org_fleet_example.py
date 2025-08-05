@@ -9,11 +9,11 @@ def setup_ag1():
     from agnets import Agent, Config
     from agnets.backends.ollama import OllamaBackend
 
-    ob1 = OllamaBackend(config={})
+    ob1 = OpenAICompatibleBackend(config={})
 
     ag1 = Agent(
         config=Config(
-            model_name="phi4-mini:3.8b",
+            model_name="google/gemini-2.5-flash",
             system_prompt="YOU MUST USE A TOOL"
         ), 
         backend=ob1
@@ -31,4 +31,5 @@ ag1 = setup_ag1()
 
 example_fleet.add_agent('agent_one', ag1)
 
-example_fleet.invoke_agent("agent_one", "invoke the respond_to_user tool please")
+res = example_fleet.invoke_agent("agent_one", "what functions are available to you?")
+print(res)
