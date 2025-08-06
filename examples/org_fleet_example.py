@@ -1,6 +1,9 @@
 from agnets.fleet import Fleet
 from agnets.backends.openai import OpenAICompatibleBackend
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 example_fleet = Fleet()
 
@@ -21,9 +24,7 @@ def setup_ag1():
 
     @ag1.add_tool
     def respond_to_user(message: str):
-        print(message)
-
-        return "SUCCESS"
+        return message
     
     return ag1
 
@@ -38,4 +39,4 @@ example_fleet.add_agent('calculator_agent', calculator_agent)
 user_input = input(">>> ")
 
 res = example_fleet.invoke_agent("agent_one", user_input, stop_on=['respond_to_user'])
-print(res)
+print(res[-1].components[-1].content.content[0].text)

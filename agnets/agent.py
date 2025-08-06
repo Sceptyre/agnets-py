@@ -10,6 +10,9 @@ from .config import Config
 
 import json
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Agent(BaseModel):
     config: Config = Field(default_factory=Config)
     backend: Backend
@@ -84,8 +87,10 @@ outputs:
                 _kvargs['tools'] = tools
                 
             # GENERATE RESPONSE
+            logger.debug(f"Generating response from backend({self.backend.__class__.__qualname__}): {_kvargs}")
             response =  self.backend.generate_response(**_kvargs)
             messages.append(response)
+            logger.debug(f"Received response from backend({self.backend.__class__.__qualname__}): {response}")
 
             # RETURN IF NO TOOL USE REQUIRED
             if not force_tools:
@@ -93,18 +98,24 @@ outputs:
 
             # TOOL USE ENFORCEMENT
             if force_tools and response.components[-1].type != 'tool_call':
+                logger.debug(f"`force_tools` enabled and no tool response received. Re-prompting....")
                 messages.append(Message(role='user', components=[MessageComponent(type='message', content="ERROR: Calling a tool is REQUIRED")]))
                 continue
 
             # EXECUTE TOOLS
             for tool_call in filter(lambda x: x.type == 'tool_call', response.components):
+                tool_call_id = tool_call.meta.get('tool_call_id')
+
+                logger.debug(f"Invoking tool_call({tool_call_id}) ({tool_call.content.params})")
                 result = self._call_tool(tool_call.content.params.name, **tool_call.content.params.arguments)
+                logger.debug(f"Result of tool_call({tool_call_id}) ({result})")
+
                 messages.append(Message(
                     role='system',
                     components=[
                         MessageToolResultComponent(
                             meta={
-                                'tool_call_id': tool_call.meta.get('tool_call_id'), 
+                                'tool_call_id': tool_call_id, 
                                 'tool_call_name': tool_call.content.params.name
                             },
                             type='tool_result',
@@ -118,6 +129,7 @@ outputs:
 
                 # TOOL STOP
                 if tool_call.content.params.name in stop_on:
+                    logger.debug(f"Stopping after tool_call({tool_call_id}) ({tool_call.content.params})")
                     return messages
 
     def invoke(self, user_message: str, stop_on: List[str] = [], force_tools: bool = True) -> List[Message]:

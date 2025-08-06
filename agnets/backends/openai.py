@@ -113,43 +113,10 @@ class OpenAICompatibleBackend(Backend):
         for tool in tools:
             tools_mapped.append(_map_to_openai_tool(tool))
 
-        print(mapped_messages)
-        print("#" * 50)
-            
-
         response = self._client.chat.completions.create(
             model=agent_config.model_name,
             messages=mapped_messages,
             tools=tools_mapped
         )
 
-        output = []
-
-        print(response.choices[0].message)
-
         return _map_from_openai_message(response.choices[0].message)
-        
-        if response.choices[0].message.reasoning:
-            output.append(Message(
-                role='assistant',
-                message_type='thinking',
-                message_content=response.choices[0].message.reasoning
-            ))
-
-        if response.choices[0].message.content:
-            output.append(Message(
-                role='assistant',
-                message_type='message',
-                message_content=response.choices[0].message.content
-            ))
-
-        for tool_call in response.choices[0].message.tool_calls:
-            output.append(Message(
-                id=tool_call.id,
-                role='assistant',
-                message_type='tool_call',
-                message_content=tool_call
-            ))
-
-
-        return output
