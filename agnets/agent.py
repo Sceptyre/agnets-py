@@ -32,8 +32,18 @@ class Agent(BaseModel):
 
     def _call_tool(self, tool_name: str, *args, **kvargs) -> Any:
         tool = self.__tool_manager.get_tool(tool_name)
+
+        if not tool:
+            logger.debug(f"Agent requested unknown tool {tool_name}")
+            return f"ERROR: Unknown tool: '{tool_name}'"
         
-        return tool.fn(*args, **kvargs)
+        try:
+            tool_result = tool.fn(*args, **kvargs)
+        except Exception as err:
+            logger.error(f"Exception occured while calling {tool_name}: {err}")
+            return f"ERROR: Exception occured while calling {tool_name}: {err}"
+
+        return tool_result
 
     def _workaround_system_prompt(self, tools: List[mcp.Tool]) -> str:
         system_prompt = self.config.system_prompt

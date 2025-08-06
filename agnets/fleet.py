@@ -3,6 +3,10 @@ from .agent import Agent
 from .types.message import Message, MessageComponent
 from typing import Dict, List, Literal, Any, Annotated
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class FleetDialogBranch(BaseModel):
     meta: Dict[str, Any]
 
@@ -62,6 +66,8 @@ class Fleet(BaseModel):
             """
             if agent_name not in allowed_escalation_agent_names:
                 return f"ERROR: '{agent_name}' not in {allowed_escalation_agent_names}"
+            
+            logger.info(f"Escalating to {agent_name}: {query}, {context}")
             
             self._dialog_branches[f"{_agent_name}::{agent_name}"] = FleetDialogBranch(
                 meta={
