@@ -61,29 +61,21 @@ outputs:
 {tool.fn_metadata.output_schema}"""
         return system_prompt
 
-    def invoke(self, user_message: str, stop_on: List[str] = [], force_tools: bool = True) -> List[Message]:
+
+    def _invoke_completion(self, messages: List[Message], stop_on: List[str], force_tools: bool = True) -> List[Message]:
         if len(stop_on) == 0 and force_tools:
             raise Exception(f"Empty `stop_on` and `force_tools` = True not supported.")
 
-
         tools = self.list_tools()
 
-        messages = [
-            Message(
-                role='user',
-                components=[MessageComponent(
-                    type='message',
-                    content=user_message
-                )],
-            )
-        ]
+        # PREPARE LLM RESPONSE ARGS
+        _kvargs = {
+            'agent_config': self.config,
+        }
 
         while True:
             # PREPARE LLM RESPONSE ARGS
-            _kvargs = {
-                'messages': messages,
-                'agent_config': self.config,
-            }
+            _kvargs['messages'] = messages
 
             if self.config.do_unsupported_model_workaround:
                 _kvargs['system_prompt_override'] = self._workaround_system_prompt(tools)
@@ -127,6 +119,19 @@ outputs:
                 # TOOL STOP
                 if tool_call.content.params.name in stop_on:
                     return messages
+
+    def invoke(self, user_message: str, stop_on: List[str] = [], force_tools: bool = True) -> List[Message]:
+        messages = [
+            Message(
+                role='user',
+                components=[MessageComponent(
+                    type='message',
+                    content=user_message
+                )],
+            )
+        ]
+
+        return self._invoke_completion(messages=messages, stop_on=stop_on, force_tools=force_tools)
 
 
 # Alias
