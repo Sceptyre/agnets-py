@@ -1,7 +1,7 @@
 [project]
 name = "agnets"
 version = "0.1.0"
-description = "Add your description here"
+description = "A multi-agentic python framework."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,4 +12,7 @@ dependencies = [
 [project.optional-dependencies]
 ollama = [
     "ollama>=0.5.1",
+]
+openai = [
+    "openai>=1.98.0",
 ]

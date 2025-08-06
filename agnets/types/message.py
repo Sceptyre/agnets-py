@@ -1,8 +1,28 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+import mcp.types
 
-from typing import Literal, Any
+from typing import Literal, List, Dict, Any
+
+
+class MessageComponent(BaseModel):
+    type: Literal['message']
+    content: str
+    meta: Dict[str, Any] = Field(default_factory=dict)
+
+class MessageThinkingComponent(MessageComponent):
+    type: Literal['thinking']
+    content: str
+
+class MessageToolCallComponent(MessageComponent):
+    type: Literal['tool_call']
+    content: mcp.types.CallToolRequest
+
+class MessageToolResultComponent(MessageComponent):
+    type: Literal['tool_result']
+    content: mcp.types.CallToolResult
+
+
 
 class Message(BaseModel):
-    message_type: Literal['message', 'thinking', 'tool_call', 'tool_result']
     role: Literal['system', 'assistant', 'user']
-    message_content: Any
+    components: List[MessageComponent | MessageThinkingComponent | MessageToolCallComponent | MessageToolResultComponent]

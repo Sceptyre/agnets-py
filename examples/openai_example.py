@@ -6,10 +6,9 @@ import os
 
 agnet = Agnet(
     config=Config(
-        model_name="qwen/qwen3-14b"
+        model_name="z-ai/glm-4-32b"
     ),
-    backend=OpenAICompatibleBackend(
-    )
+    backend=OpenAICompatibleBackend()
 )
 
 @agnet.add_tool
