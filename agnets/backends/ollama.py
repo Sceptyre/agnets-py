@@ -43,7 +43,7 @@ def _map_to_ollama_message(message: Message) -> ollama.Message:
             )
         
         if component.type == 'tool_result':
-            msg_builder['content'] = f"<{component._meta.get('tool_name')}>{component.content.content[0]}</{component._meta.get('tool_name')}>"
+            msg_builder['content'] = f"<{component.meta.get('tool_call_name')}>{component.content.content[0]}</{component.meta.get('tool_call_name')}>"
         
         return ollama.Message.model_validate(msg_builder)
 
