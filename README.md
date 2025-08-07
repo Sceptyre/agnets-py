@@ -1,7 +1,7 @@
 # agnets-py
 
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-GPLv3-yellow.svg))](https://opensource.org/license/gpl-3-0)
+[![License: MIT](https://img.shields.io/badge/License-GPLv3-yellow.svg)](https://opensource.org/license/gpl-3-0)
 
 ## Overview
 
@@ -235,7 +235,7 @@ We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for 
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
+This project is licensed under the GPLv3 License. See [LICENSE.md](LICENSE.md) for details.
 
 ## Contact & Support
 
