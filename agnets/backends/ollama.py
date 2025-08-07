@@ -27,7 +27,7 @@ def _map_to_ollama_message(message: Message) -> ollama.Message:
 
     for component in message.components:
         if component.type == 'message':
-            msg_builder['message'] = component.content
+            msg_builder['content'] = component.content
         
         if component.type == 'thinking':
             msg_builder['thinking'] = component.content
