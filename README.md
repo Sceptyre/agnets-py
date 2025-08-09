@@ -1,11 +1,11 @@
-# agnets-py
+# agnets
 
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-GPLv3-yellow.svg)](https://opensource.org/license/gpl-3-0)
 
 ## Overview
 
-`agnets-py` is a modern, Python-first framework designed for building powerful AI agents and orchestrating them into collaborative, multi-agent systems—a "fleet." It provides a flexible, type-safe foundation for creating everything from simple automated assistants to complex, coordinated AI organizations that can delegate tasks and specialize.
+`agnets` is a modern, Python-first framework designed for building powerful AI agents and orchestrating them into collaborative, multi-agent systems—a "fleet." It provides a flexible, type-safe foundation for creating everything from simple automated assistants to complex, coordinated AI organizations that can delegate tasks and specialize.
 
 Our vision is to empower developers to build sophisticated AI-powered applications by providing a framework that makes defining agents, their tools, and their inter-agent escalations intuitive and robust, allowing you to construct pseudo-organizations as collections of inference-powered Python objects.
 
@@ -20,11 +20,11 @@ Our vision is to empower developers to build sophisticated AI-powered applicatio
 - **📡 Message-Based Communication**: Structured, component-based message system for clear and extensible inter-agent and user-agent interactions.
 - **⚙️ Extensible Architecture**: Designed for easy extension and customization of agents, backends, and fleet behaviors.
 
-## Why `agnets-py`?
+## Why `agnets`?
 
-`agnets-py` stands out by treating multi-agent systems as a first-class citizen:
+`agnets` stands out by treating multi-agent systems as a first-class citizen:
 
-*   **Fleet-Centric Design**: Unlike frameworks where multi-agent is an add-on, `agnets-py` is built around the `Fleet` concept, making it natural to design organizations of AI agents.
+*   **Fleet-Centric Design**: Unlike frameworks where multi-agent is an add-on, `agnets` is built around the `Fleet` concept, making it natural to design organizations of AI agents.
 *   **Structured Escalation Paths**: Easily define rules for how agents can delegate tasks or escalate queries to other specialized agents within the fleet, mimicking real-world organizational structures.
 *   **Simplified Multi-Agent Logic**: The framework handles the complexities of inter-agent communication, allowing you to focus on the individual agent's expertise and the overall fleet structure.
 *   **Backend Flexibility per Agent**: Different agents within the same fleet can use different AI backends (e.g., one agent uses a powerful cloud model for complex reasoning, another uses a local model for quick, specific tasks).
@@ -40,26 +40,26 @@ Our vision is to empower developers to build sophisticated AI-powered applicatio
 
 ### Installation
 
-Install `agnets-py` with core dependencies:
+Install `agnets` with core dependencies:
 
 ```bash
-pip install agnets-py
+pip install agnets
 ```
 
 Or, using UV (recommended):
 
 ```bash
-uv add agnets-py
+uv add agnets
 ```
 
 To use with a specific backend, install the optional dependencies:
 
 ```bash
 # For OpenAI-compatible backends
-pip install "agnets-py[openai]"
+pip install "agnets[openai]"
 
 # For Ollama
-pip install "agnets-py[ollama]"
+pip install "agnets[ollama]"
 ```
 
 ### Single Agent Example
@@ -92,7 +92,7 @@ print(response.content)
 
 ### Multi-Agent & Fleet System Example
 
-This is where `agnets-py` truly shines. Let's create a small fleet of two agents: one for general queries and another specialized for calculations.
+This is where `agnets` truly shines. Let's create a small fleet of two agents: one for general queries and another specialized for calculations.
 
 **1. Define your Specialist Agents (e.g., Calculator Agent)**
 *(This could be in a separate file like `calculator.py`)*
@@ -210,16 +210,16 @@ For the most stable release, install from PyPI as shown in the Quick Start.
 To install the latest development version from source:
 
 ```bash
-git clone https://github.com/Sceptyre/agnets-py.git
-cd agnets-py
+git clone https://github.com/Sceptyre/agnets.git
+cd agnets
 pip install -e .
 ```
 
 Or with UV:
 
 ```bash
-git clone https://github.com/Sceptyre/agnets-py.git
-cd agnets-py
+git clone https://github.com/Sceptyre/agnets.git
+cd agnets
 uv pip install -e .
 ```
 
@@ -239,4 +239,4 @@ This project is licensed under the GPLv3 License. See [LICENSE.md](LICENSE.md) f
 
 ## Contact & Support
 
-For questions, bug reports, or feature requests, please open an issue on our [GitHub Issues page](https://github.com/Sceptyre/agnets-py/issues).
+For questions, bug reports, or feature requests, please open an issue on our [GitHub Issues page](https://github.com/Sceptyre/agnets/issues).
