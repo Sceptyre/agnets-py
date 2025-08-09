@@ -5,7 +5,7 @@ import mcp
 from typing import Any, List
 
 from .types.backend import Backend
-from .types.message import Message, MessageComponent, MessageToolResultComponent
+from .types.message import Message, MessageComponent, MessageToolResultComponent, MessageToolCallComponent
 from .config import Config
 
 import json
@@ -74,6 +74,38 @@ outputs:
 {tool.fn_metadata.output_schema}"""
         return system_prompt
 
+    def _workaround_map_message_to_tool_call(self, workaround_message: Message) -> Message:
+        # Last message should always be a content block
+        workaround_message_component = workaround_message.components[-1]
+
+        if workaround_message_component.type != 'message':
+            return workaround_message
+
+        try:
+            # Attempt to extract a json object
+            json_content = workaround_message_component.content.removeprefix('```').removeprefix('json').removesuffix('```')
+
+            tool_call_obj = json.loads(json_content)
+        
+            return Message(
+                role = 'assistant',
+                components  = [
+                    MessageToolCallComponent(
+                        type='tool_call',
+                        content=mcp.types.CallToolRequest(
+                            method = 'tools/call',
+                            params = mcp.types.CallToolRequestParams(
+                                name = tool_call_obj['tool_call']['tool_name'],
+                                arguments = tool_call_obj['tool_call']['input']
+                            )
+                        )
+                    )
+                ]
+            )
+        except Exception as _:
+            return workaround_message
+
+    
 
     def _invoke_completion(self, messages: List[Message], stop_on: List[str], force_tools: bool = True) -> List[Message]:
         if len(stop_on) == 0 and force_tools:
@@ -105,6 +137,11 @@ outputs:
             # RETURN IF NO TOOL USE REQUIRED
             if not force_tools:
                 return messages
+
+            # HANDLE WORKAROUND
+            if force_tools and self.config.do_unsupported_model_workaround:
+                response = self._workaround_map_message_to_tool_call(response)
+
 
             # TOOL USE ENFORCEMENT
             if force_tools and response.components[-1].type != 'tool_call':
