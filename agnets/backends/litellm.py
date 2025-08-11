@@ -4,7 +4,7 @@
 # from openai.types.shared_params.function_definition import FunctionDefinition
 
 from ..types.backend import Backend
-from ..types.message import Message, MessageComponent, MessageThinkingComponent, MessageToolCallComponent
+from ..types.message import Message, MessageComponent, MessageThinkingComponent, MessageToolCallComponent, MessageToolResultComponent
 
 from typing import Dict
 
@@ -13,57 +13,87 @@ import mcp.server.fastmcp.tools
 import json
 
 from litellm import completion, LiteLLM
-from litellm.types.completion import ChatCompletionAssistantMessageParam, ChatCompletionUserMessageParam, ChatCompletionSystemMessageParam, ChatCompletionToolMessageParam, ChatCompletionMessageParam
+from litellm.types.completion import Function, ChatCompletionAssistantMessageParam, ChatCompletionUserMessageParam, ChatCompletionSystemMessageParam, ChatCompletionToolMessageParam, ChatCompletionMessageToolCallParam, ChatCompletionMessageParam
 
-def _map_to_litellm_message(message: Message) -> Dict:
-    msg = {
-        "role": message.role,
-    }
+def _map_to_litellm_system_message(message: Message) -> ChatCompletionSystemMessageParam:
+    return ChatCompletionSystemMessageParam(
+        role='system',
+        content=message.components[0].content
+    )
+
+def _map_to_litellm_assistant_message(message: Message) -> ChatCompletionAssistantMessageParam | ChatCompletionToolMessageParam:
+    msg = ChatCompletionAssistantMessageParam(
+        role='assistant',
+        content=None,
+        tool_calls=[],
+    )
 
     for component in message.components:
         if component.type == 'message':
-            msg['content'] = component.content
-            continue
-
-        if component.type == 'thinking':
-            msg['thinking'] = component.content
+            msg.content = component.content
             continue
 
         if component.type == 'tool_call':
-            if not msg.get('tool_calls'):
-                msg['tool_calls'] = []
-
-            msg['tool_calls'].append({
-                'id': component.meta.get('tool_call_id'),
-                'type': 'function',
-                'function': {
-                    'name': component.content.params.name,
-                    'arguments': json.dumps(component.content.params.arguments)
-                }
-            })
+            msg.tool_calls.append(ChatCompletionMessageToolCallParam(
+                id = component.meta.get('tool_call_id'),
+                type='function',
+                function=Function(
+                    name=component.content.params.name,
+                    arguments=component.content.params.arguments
+                )
+            ))
             continue
 
         if component.type == 'tool_result':
-            return {
-                'role': 'tool',
-                'tool_call_id': component.meta.get('tool_call_id'),
-                'content': component.content.content[0].text
-            }
+            return ChatCompletionToolMessageParam(
+                role = 'tool',
+                tool_call_id=component.meta.get('tool_call_id'),
+                content= component.content.content[0].text
+            )
 
     return msg
 
-def _map_to_litellm_tool(tool: mcp.server.fastmcp.tools.Tool) -> ChatCompletionMessageParam:
-    ChatCompletionToolMessageParam()
-    return ChatCompletionToolParam(
-        type='function',
-        function=FunctionDefinition(
-            name=tool.name,
-            description=tool.description,
-            parameters=tool.parameters
-        )
+def _map_to_litellm_user_message(message: Message) -> ChatCompletionUserMessageParam:
+    return ChatCompletionUserMessageParam(
+        role='user',
+        content=message.components[0].content
     )
 
+def _map_to_litellm_message(message: Message) -> ChatCompletionMessageParam:
+    switch = {
+        'system': _map_to_litellm_system_message,
+        'assistant': _map_to_litellm_assistant_message,
+        'user': _map_to_litellm_user_message
+    }
+
+    return switch[message.role](message)
+
+def _map_to_litellm_tool(tool: mcp.server.fastmcp.tools.Tool) -> Dict:
+    return {
+        'type': 'function',
+        'function': {
+            'name': tool.name,
+            'description': tool.description,
+            'parameters': tool.parameters
+        }
+    }
+
 def _map_from_litellm_message(message: ChatCompletionMessageParam) -> Message:
+    if message.role == 'tool':
+        return Message(role='user', components=[
+            MessageToolResultComponent(
+                type='tool_result',
+                content=mcp.types.CallToolResult(
+                    meta={
+                        'tool_call_id': message.tool_call_id
+                    },
+                    content=mcp.types.TextContent(
+                        text=message.content
+                    )
+                )
+            )
+        ])
+
     msg = Message(role=message.role, components=[])
 
     if message.content:
@@ -72,11 +102,6 @@ def _map_from_litellm_message(message: ChatCompletionMessageParam) -> Message:
             content=message.content
         ))
 
-    if message.reasoning:
-        msg.components.append(MessageThinkingComponent(
-            type='thinking',
-            content=message.reasoning
-        ))
 
     for tool_call in message.tool_calls or []:
         msg.components.append(MessageToolCallComponent(
