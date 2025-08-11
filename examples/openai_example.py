@@ -1,14 +1,14 @@
 from agnets import Agnet, Config
 from typing import Literal
-from agnets.backends.openai import OpenAICompatibleBackend
+from agnets.backends.litellm import LiteLLMBackend
 
 import os
 
 agnet = Agnet(
     config=Config(
-        model_name="z-ai/glm-4-32b"
+        model_name="openai/z-ai/glm-4-32b"
     ),
-    backend=OpenAICompatibleBackend()
+    backend=LiteLLMBackend()
 )
 
 @agnet.add_tool
@@ -24,5 +24,5 @@ def respond_to_user(message: str) -> str:
     return {}
 
 
-res = agnet.invoke("hello world")
+res = agnet.invoke("hello world", stop_on=['respond_to_user'])
 print(res)
