@@ -1,8 +1,3 @@
-# from openai import OpenAI
-# from openai.types.chat.chat_completion_message import ChatCompletionMessage
-# from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
-# from openai.types.shared_params.function_definition import FunctionDefinition
-
 from ..types.backend import Backend
 from ..types.message import Message, MessageComponent, MessageThinkingComponent, MessageToolCallComponent, MessageToolResultComponent
 
@@ -12,7 +7,7 @@ import mcp.server.fastmcp.tools
 
 import json
 
-from litellm import completion, LiteLLM
+from litellm import completion
 from litellm.types.completion import Function, ChatCompletionAssistantMessageParam, ChatCompletionUserMessageParam, ChatCompletionSystemMessageParam, ChatCompletionToolMessageParam, ChatCompletionMessageToolCallParam, ChatCompletionMessageParam
 
 def _map_to_litellm_system_message(message: Message) -> ChatCompletionSystemMessageParam:
@@ -139,7 +134,9 @@ class LiteLLMBackend(Backend):
         response = completion(
             model=agent_config.model_name,
             messages=mapped_messages,
-            tools=tools_mapped
+            tools=tools_mapped,
+            api_key=self.config.get('api_key', None),
+            base_url=self.config.get('base_url', None),
         )
 
         return _map_from_litellm_message(response.choices[0].message)
