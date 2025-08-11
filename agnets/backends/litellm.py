@@ -7,7 +7,7 @@ import mcp.server.fastmcp.tools
 
 import json
 
-from litellm import completion
+import litellm
 from litellm.types.completion import Function, ChatCompletionAssistantMessageParam, ChatCompletionUserMessageParam, ChatCompletionSystemMessageParam, ChatCompletionToolMessageParam, ChatCompletionMessageToolCallParam, ChatCompletionMessageParam
 
 def _map_to_litellm_system_message(message: Message) -> ChatCompletionSystemMessageParam:
@@ -73,7 +73,7 @@ def _map_to_litellm_tool(tool: mcp.server.fastmcp.tools.Tool) -> Dict:
         }
     }
 
-def _map_from_litellm_message(message: ChatCompletionMessageParam) -> Message:
+def _map_from_litellm_message(message: litellm.Message) -> Message:
     if message.role == 'tool':
         return Message(role='user', components=[
             MessageToolResultComponent(
@@ -95,6 +95,12 @@ def _map_from_litellm_message(message: ChatCompletionMessageParam) -> Message:
         msg.components.append(MessageComponent(
             type='message',
             content=message.content
+        ))
+
+    if message.provider_specific_fields.get('reasoning'):
+        msg.components.append(MessageThinkingComponent(
+            type='thinking',
+            content=message.provider_specific_fields.get('reasoning')
         ))
 
 
@@ -131,7 +137,7 @@ class LiteLLMBackend(Backend):
         for tool in tools:
             tools_mapped.append(_map_to_litellm_tool(tool))
 
-        response = completion(
+        response = litellm.completion(
             model=agent_config.model_name,
             messages=mapped_messages,
             tools=tools_mapped,
