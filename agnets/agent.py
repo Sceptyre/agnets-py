@@ -15,12 +15,16 @@ logger = logging.getLogger(__name__)
 
 class Agent(BaseModel):
     config: Config = Field(default_factory=Config)
-    backend: Backend
+    backend: Backend | None
 
     __tool_manager: ToolManager
 
     def model_post_init(self, ctx):
         self.__tool_manager = ToolManager()
+
+        if self.backend is None:
+            from .backends.litellm import LiteLLMBackend
+            self.backend = LiteLLMBackend()
 
     @property
     def add_tool(self): 
@@ -157,21 +161,37 @@ outputs:
                 result = self._call_tool(tool_call.content.params.name, **tool_call.content.params.arguments)
                 logger.debug(f"Result of tool_call({tool_call_id}) ({result})")
 
-                messages.append(Message(
-                    role='system',
-                    components=[
-                        MessageToolResultComponent(
-                            meta={
-                                'tool_call_id': tool_call_id, 
-                                'tool_call_name': tool_call.content.params.name
-                            },
-                            type='tool_result',
-                            content=mcp.types.CallToolResult(
-                                content=[mcp.types.TextContent(type='text', text=str(result))]
-                            ),
-                        )
-                    ]
-                ))
+                if self.config.do_unsupported_model_workaround:
+                    messages.append(Message(
+                        role='system',
+                        components=[
+                            MessageComponent(
+                                type='message',
+                                content=f"""<tool_call_result>
+<{tool_call.content.params.name}>
+{result}
+</{tool_call.content.params.name}>
+</tool_call_result>""",
+                            )
+                        ]
+                    ))
+
+                else: 
+                    messages.append(Message(
+                        role='system',
+                        components=[
+                            MessageToolResultComponent(
+                                meta={
+                                    'tool_call_id': tool_call_id, 
+                                    'tool_call_name': tool_call.content.params.name
+                                },
+                                type='tool_result',
+                                content=mcp.types.CallToolResult(
+                                    content=[mcp.types.TextContent(type='text', text=str(result))]
+                                ),
+                            )
+                        ]
+                    ))
 
 
                 # TOOL STOP
