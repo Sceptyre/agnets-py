@@ -3,7 +3,6 @@ from mcp.server.fastmcp.tools import ToolManager
 
 from typing import Any, List, Dict
 
-from .types.message import Message
 from .config import Config
 from .utils import map_fastmcp_tool_to_openai_tool
 
@@ -16,9 +15,13 @@ logger = logging.getLogger(__name__)
 
 class Agent(BaseModel):
     config: Config = Field(default_factory=Config)
-    litellm_config: Dict = Field(default_factory=dict)
+    router: litellm.Router
 
     __tool_manager: ToolManager
+
+    model_config = {
+        'arbitrary_types_allowed': True
+    }
 
     def model_post_init(self, ctx):
         self.__tool_manager = ToolManager()
@@ -65,11 +68,11 @@ class Agent(BaseModel):
         while True:
             # GENERATE RESPONSE
             logger.debug(f"Generating response via litellm ({self.config.model_name})")
-            response = litellm.completion(
+            [print(m) for m in messages]
+            response = self.router.completion(
                 model=self.config.model_name, 
                 messages=messages, 
                 tools=tools_mapped,
-                **self.litellm_config,
                 stream=False
             )
             response_message = response.choices[0].message

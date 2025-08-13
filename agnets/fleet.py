@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from .agent import Agent
+from .agentv2 import Agent
 from .types.message import Message, MessageComponent
 from typing import Dict, List, Literal, Any, Annotated
 
@@ -12,16 +12,15 @@ class FleetDialogBranch(BaseModel):
 
     operating_agent: Agent
 
-    messages: Annotated[List[Message], Field(default_factory=list)]
+    messages: Annotated[List[Dict], Field(default_factory=list)]
 
-    def invoke_agent(self, query: str) -> List[Message]:
-        self.messages.append(Message(
-            role='user',
-            components=[MessageComponent(
-                type='message',
-                content=f"<meta>\n{self.meta}\n</meta><query>{query}</query>"
-            )]
-        ))
+    def invoke_agent(self, query: str) -> List[Dict]:
+        self.messages.append(
+            {
+                'role': 'user',
+                'content': f"<meta>\n{self.meta}\n</meta><query>{query}</query>"
+            }
+        )
 
         self.operating_agent._invoke_completion(self.messages, stop_on=['respond_to_agent'], force_tools=True)
 
@@ -62,7 +61,7 @@ class Fleet(BaseModel):
         @agent.add_tool
         def ask_agent(agent_name: KNOWN_AGENTS_TYPE, query: str, context: str):
             """
-            Ask a known agent a question
+            Ask a known specialized agent a question. Work with agents that have a more specific or applicable role than you may have
             """
             if agent_name not in allowed_escalation_agent_names:
                 return f"ERROR: '{agent_name}' not in {allowed_escalation_agent_names}"
@@ -76,7 +75,11 @@ class Fleet(BaseModel):
                 operating_agent=self.agents.get(agent_name)
             )
 
-            return self._dialog_branches[f"{_agent_name}::{agent_name}"].invoke_agent(f"Question: {query}\nContext: {context}")[-1]
+            ask_response =  self._dialog_branches[f"{_agent_name}::{agent_name}"].invoke_agent(f"Question: {query}\nContext: {context}")
+            print("\n\n")
+            print(ask_response)
+
+            return f"RESPONSE FROM {agent_name}:\n{ask_response[-1]['content']}"
 
     def invoke_agent(self, agent_name: str, query: str, stop_on: List[str] = []):
         return self.agents.get(agent_name).invoke(query, stop_on = stop_on, force_tools=True)
