@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from mcp.server.fastmcp.tools import ToolManager
+from mcp.server.fastmcp.tools import ToolManager, Tool
 
 from typing import Any, List, Dict
 
@@ -9,6 +9,10 @@ from .utils import map_fastmcp_tool_to_openai_tool
 import json
 
 import litellm
+
+import asyncio
+
+import time
 
 import logging
 logger = logging.getLogger(__name__)
@@ -34,6 +38,9 @@ class Agent(BaseModel):
     def list_tools(self): 
         return self.__tool_manager.list_tools
 
+    def set_tool(self, tool_name: str, tool: Tool):
+        self.__tool_manager._tools[tool_name] = tool
+
     def _call_tool(self, tool_name: str, *args, **kvargs) -> Any:
         tool = self.__tool_manager.get_tool(tool_name)
 
@@ -42,7 +49,13 @@ class Agent(BaseModel):
             return f"ERROR: Unknown tool: '{tool_name}'"
         
         try:
-            tool_result = tool.fn(*args, **kvargs)
+            is_async = asyncio.iscoroutinefunction(tool.fn)
+
+            if not is_async:
+                tool_result = tool.fn(*args, **kvargs)
+            else:
+                tool_result =  asyncio.run(tool.fn(*args, **kvargs))
+
         except Exception as err:
             logger.error(f"Exception occured while calling {tool_name}: {err}")
             return f"ERROR: Exception occured while calling {tool_name}: {err}"
@@ -68,6 +81,7 @@ class Agent(BaseModel):
         while True:
             # GENERATE RESPONSE
             logger.debug(f"Generating response via litellm ({self.config.model_name})")
+            print("#"*50)
             [print(m) for m in messages]
             response = self.router.completion(
                 model=self.config.model_name, 

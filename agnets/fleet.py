@@ -41,6 +41,9 @@ class Fleet(BaseModel):
         return super().model_post_init(context)
 
     def add_agent(self, agent_name: str, agent: Agent, allowed_escalation_agent_names: List[str] =[]):
+        if ":" in agent_name:
+            raise Exception("':' is an unsupported character for `agent_name`")
+
         self.agents[agent_name] = agent
         self._relationships[agent_name] = allowed_escalation_agent_names
 
